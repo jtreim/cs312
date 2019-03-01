@@ -42,8 +42,9 @@ def mergeHulls(left, right):
             cur_slope = slope(left.top[tl], right.top[tr])
             did_pivot = True
 
-    tl += len(left.top) + 1
-    top = left.top[:tl] + right.top[tr:]
+    # Wrap around negative index within bounds
+    tl += len(left.top)
+    top = left.top[:tl+1] + right.top[tr:]
     
     # Merge bottom: same as top except mirrored
     bl = 0
@@ -54,7 +55,7 @@ def mergeHulls(left, right):
     cur_slope = slope(left.bottom[bl], right.bottom[br])
 
     while did_pivot:
-        did_pivot = False
+        did_pivot = False 
         while br > r_min and slope(left.bottom[bl], right.bottom[(br-1)]) < cur_slope:
             br -= 1
             cur_slope = slope(left.bottom[bl], right.bottom[br])
@@ -65,8 +66,9 @@ def mergeHulls(left, right):
             cur_slope = slope(left.bottom[bl], right.bottom[br])
             did_pivot = True
 
-    br += len(right.bottom) + 1
-    bottom = right.bottom[:br] + left.bottom[bl:]
+    # Wrap around negative index within bounds
+    br += len(right.bottom)
+    bottom = right.bottom[:br+1] + left.bottom[bl:]
 
 
     result = ConvexHull(top, bottom)
