@@ -54,6 +54,9 @@ class ReducedCostMatrix:
 				children.append(child)
 		return children
 
+	def can_return_home(self):
+		return np.min(self.matrix[:,0]) != np.inf
+
 	def __lt__(self, other):
 		if len(self.visited) != len(other.visited):
 			return len(self.visited) > len(other.visited)
@@ -178,23 +181,32 @@ class TSPSolver:
 		while len(queue) > 0 and time.time()-start_time < time_allowance:
 			if len(queue) > max_queue:
 				max_queue = len(queue)
+			# print('\n__________________Queue______________________')
+			# route_list = []
+			# for city in bssf['soln'].route:
+			# 	route_list.append(city._name)
+			# print('bssf:%s cost:%s' % (route_list, bssf['cost']))
+			# for branch in queue:
+			# 	print(branch)
+
 			next_branch = heapq.heappop(queue)
 			
-			# The next branch is too big, or already back at first city
-			if (next_branch.lower_bound >= bssf['cost'] or
-				(next_branch.visited[-1] == 0 and next_branch.num_visited() < max_city_count)):
+			# Pruning
+			# The next branch is too big
+			if next_branch.lower_bound >= bssf['cost']:
 				pruned += 1
-				continue
+			# Branch is back at first city too early
+			elif (next_branch.num_visited() < max_city_count and
+				  next_branch.visited.count(0) == 2):
+				pruned += 1
+			# Branch has no way to return to first city
+			elif not next_branch.can_return_home():
+				pruned += 1
 
 			# Found a possible solution
 			elif next_branch.num_visited() == max_city_count:
 				if next_branch.lower_bound < bssf['cost']:
 					bssf['cost'] = next_branch.lower_bound
-					bssf['pruned'] = pruned
-					bssf['max'] = max_queue
-					bssf['time'] = time.time() - start_time
-					bssf['total'] = total
-					bssf['count'] = soln_count
 					
 					route = []
 					for idx in next_branch.visited:
@@ -210,6 +222,12 @@ class TSPSolver:
 				total += len(children)
 				for child in children:
 					heapq.heappush(queue, child)
+
+		bssf['pruned'] = pruned
+		bssf['max'] = max_queue
+		bssf['time'] = time.time() - start_time
+		bssf['total'] = total
+		bssf['count'] = soln_count
 
 		return bssf
 
